@@ -24,7 +24,7 @@ class widgets_master:pass
 
 class question_widgets:pass
 class question_widgets_master:pass
-question_widgets_master.widgets_lists = []
+question_widgets_master.widgets_lists = dict()
 
 DEFAULTENCODING = "utf-8"
 
@@ -43,7 +43,7 @@ def readFile(path):
 env = dict(os.environ)
 env["PYTHONIOENCODING"] = DEFAULTENCODING
 _CURRENT_QUESTION = 0
-_QUESTION_NUMBER = 5 
+_QUESTION_NUMBER = 2
 
 #TEST_LABEL = open("res/lab1.txt", "rb").read().decode("u8")
 #TEST_LABEL2 = open("res/lab1.txt", "rb").read().decode("u8")
@@ -71,7 +71,7 @@ class FullScreenWidthApp(object):
         pad=3
         self._geom='200x200+0+0'
         master.geometry("{0}x{1}+0+0".format(
-            window.winfo_screenwidth()-pad, master.screenheight))
+            int(window.winfo_screenwidth()*0.9)-pad, master.screenheight))
         master.bind('<Escape>',self.toggle_geom)            
     def toggle_geom(self,event):
         geom=self.master.winfo_geometry()
@@ -108,11 +108,74 @@ def grid_forget_widgets(object):
 	[getattr(getattr(object,i),"grid_forget")() for i in dir(object) if hasattr(getattr(object, i), "grid_forget")]
 
 
+def process_question(current_question, prev_question = -1):
+	if prev_question != -1: # if has previous question
+		question_widgets_master.widgets_lists[prev_question].w_main_lab.pack_forget()
+		question_widgets_master.widgets_lists[prev_question].w_main_frame.pack_forget()
+		
+	if current_question in question_widgets_master.widgets_lists.keys():
+		print("%d in question_widgets_master.widgets_lists.keys()  = %s, loading the main frame..." 
+			% (current_question, str(question_widgets_master.widgets_lists.keys())))
+		question_widgets_master.widgets_lists[current_question].w_main_lab.pack()
+		question_widgets_master.widgets_lists[current_question].w_main_frame.pack()
+		return
+	
+	path = "res/q%d.txt" % (current_question + 1)	
+	if not os.path.exists(path):
+		print("%s doesn't exist, bailing away..." % (path))
+		
+	Q = readFile(path)
+	count, label_count = 0, 0
+	question_frame = Frame()
+	question_widgets.w_main_frame = question_frame
+	question_widgets.w_main_lab=Tkinter.Label(window, 
+		text=TEST_LABEL3, wraplength=(window.winfo_screenwidth()*0.8-3), justify = CENTER)
+			
+	question_widgets.w_main_lab.pack(side = TOP)
+	for line in Q.split("\n"):
+		line = line.replace("\r", "")
+		if (count > 0):
+			try:
+				question, answer_form = line[:-1], line[-1]
+			except:
+				print("%s: unexpected empty line, skipping" % (path))
+				continue
+		else:
+			question = line
+
+		text_lines_count = 0
+
+		# title
+		if count == 0:
+			label = Tkinter.Label(question_frame, text = question)
+			setattr(question_widgets, "w_first_label", label)
+			label.grid(row=label_count, column=0, sticky="W")
+			label_count += 1
+		else:
+			for text_line in textwrap.wrap(question, width=int(window.winfo_screenwidth()/12)):
+				if (text_lines_count > 0):
+					text_line = "     " + text_line
+				label = Tkinter.Label(question_frame, text=text_line)
+				setattr(question_widgets, "w%s_%d_label" % (str(count).zfill(3), text_lines_count), label)
+				label.grid(row=label_count, column=0, sticky="W")
+
+				# if first question line
+				if (text_lines_count == 0):
+					entry = Entry(question_frame, width=1, bd=1)
+					entry.grid(row = label_count, column=1)
+				text_lines_count += 1
+				label_count += 1
+		count += 1
+	question_widgets_master.widgets_lists[current_question]=question_widgets
+	question_widgets_master.widgets_lists[current_question].w_main_frame.pack()
+
 def next_question(event):
 	global _CURRENT_QUESTION
 	
-	if (_CURRENT_QUESTION < len(question_widgets_master.widgets_lists)):
+	if (_CURRENT_QUESTION < _QUESTION_NUMBER - 1):
 		_CURRENT_QUESTION += 1
+		process_question(_CURRENT_QUESTION, _CURRENT_QUESTION - 1)
+		nav_widgets.forward.bind('<Button-1>', next_question)
 	else:
 		nav_widgets.forward.config(state = "disabled")
 		nav_widgets.forward.unbind('<Button-1>')
@@ -122,12 +185,13 @@ def prev_question(event):
 	
 	if (_CURRENT_QUESTION > 0):
 		_CURRENT_QUESTION -= 1
-		if (nav_widgets.forward.cget("state") != "normal" and (
-				len(question_widgets_master.widgets_lists) > 1)):
+		if (nav_widgets.forward.cget("state") != "normal" and _QUESTION_NUMBER > 1):
 			nav_widgets.forward.config(state = "normal")
 			nav_widgets.forward.bind('<Button-1>', next_question)
 	else:
 		nav_widgets.backward.bind('<Button-1>', start_app)
+	
+	process_question(_CURRENT_QUESTION, _CURRENT_QUESTION - 1)
 	
 def second_window(event):
 	global window
@@ -135,57 +199,10 @@ def second_window(event):
 	pack_forget_widgets(widgets)
 	nav_widgets.backward.config(state = "normal")
 	nav_widgets.backward.bind('<Button-1>', start_app)
+	nav_widgets.forward.bind('<Button-1>', next_question)
 
-	if (not question_widgets_master.widgets_lists):
-		questions = [readFile("res/q1.txt")]
-		# TODO: split question specific widgets
-		#readFile("res/q2.txt")
-
-		count, label_count = 0, 0
-		question_frame = Frame()
-		question_widgets.w_main_frame = question_frame
-		question_widgets.w_main_lab=Tkinter.Label(window, 
-			text=TEST_LABEL3, wraplength=(window.winfo_screenwidth()*0.8-3), justify = CENTER)
-			
-		question_widgets.w_main_lab.pack(side = TOP)
-		for Q in questions:
-			for line in Q.split("\n"):
-				line = line.replace("\r", "")
-				if (count > 0):
-					question, answer_form = line[:-1], line[-1]
-				else:
-					question = line
-
-				text_lines_count = 0
-
-				# title
-				if count == 0:
-					label = Tkinter.Label(question_frame, text = question)
-					setattr(question_widgets, "w_first_label", label)
-					label.grid(row=label_count, column=0, sticky="W")
-					label_count += 1
-				else:
-					for text_line in textwrap.wrap(question, width=int(window.winfo_screenwidth()/15)):
-						if (text_lines_count > 0):
-							text_line = "     " + text_line
-						label = Tkinter.Label(question_frame, text=text_line)
-						setattr(question_widgets, "w%s_%d_label" % (str(count).zfill(3), text_lines_count), label)
-						label.grid(row=label_count, column=0, sticky="W")
-
-						# if first question line
-						if (text_lines_count == 0):
-							entry = Entry(question_frame, width=1, bd=1)
-							entry.grid(row = label_count, column=1)
-						text_lines_count += 1
-						label_count += 1
-				count += 1
-				
-			question_widgets_master.widgets_lists.append(question_widgets)
-		question_widgets_master.widgets_lists[0].w_main_frame.pack()
-	else:
-		question_widgets.w_main_lab.pack(side = TOP)
-		question_widgets.w_main_frame.pack()
-
+	process_question(_CURRENT_QUESTION)
+	
 def start_app(event):
 	global window
 	
@@ -194,7 +211,7 @@ def start_app(event):
 		widgets_master.widgets_lists = [widgets]
 		
 		window=Tkinter.Tk()
-		window.screenheight = int(window.winfo_screenheight()*0.9)
+		window.screenheight = int(window.winfo_screenheight()*0.7)
 		FullScreenWidthApp(window)
 	
 		widgets.w00_main_frame = Frame(window, borderwidth = 2)
@@ -222,8 +239,8 @@ def start_app(event):
 	
 		window.mainloop()
 	else:
-		question_widgets_master.widgets_lists[0].w_main_frame.pack_forget()
-		question_widgets_master.widgets_lists[0].w_main_lab.pack_forget()
+		question_widgets_master.widgets_lists[_CURRENT_QUESTION].w_main_frame.pack_forget()
+		question_widgets_master.widgets_lists[_CURRENT_QUESTION].w_main_lab.pack_forget()
 		pack_widgets(widgets)
 		nav_widgets.backward.unbind('<Button-1>')
 		nav_widgets.backward.config(state = "disabled")
