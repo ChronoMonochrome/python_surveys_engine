@@ -43,7 +43,7 @@ def readFile(path):
 env = dict(os.environ)
 env["PYTHONIOENCODING"] = DEFAULTENCODING
 _CURRENT_QUESTION = 0
-_QUESTION_NUMBER = 2
+_QUESTION_NUMBER = 3
 
 #TEST_LABEL = open("res/lab1.txt", "rb").read().decode("u8")
 #TEST_LABEL2 = open("res/lab1.txt", "rb").read().decode("u8")
@@ -109,16 +109,17 @@ def grid_forget_widgets(object):
 
 
 def process_question(current_question, prev_question = -1):
+	print("process_question: question %d%s" % (current_question, (", previous was %d" % prev_question) if prev_question >= 0 else ""))
 	if prev_question != -1: # if has previous question
-		question_widgets_master.widgets_lists[prev_question].w_main_lab.pack_forget()
-		question_widgets_master.widgets_lists[prev_question].w_main_frame.pack_forget()
+		question_widgets_master.widgets_lists[prev_question].w_main_lab.destroy()
+		question_widgets_master.widgets_lists[prev_question].w_main_frame.destroy()
 		
-	if current_question in question_widgets_master.widgets_lists.keys():
-		print("%d is in question_widgets_master.widgets_lists.keys()  = %s, loading the main frame..." 
-			% (current_question, str(question_widgets_master.widgets_lists.keys())))
-		question_widgets_master.widgets_lists[current_question].w_main_lab.pack()
-		question_widgets_master.widgets_lists[current_question].w_main_frame.pack()
-		return
+	#if current_question in question_widgets_master.widgets_lists.keys():
+	#	print("%d is in question_widgets_master.widgets_lists.keys()  = %s, loading the main frame..." 
+	#		% (current_question, str(question_widgets_master.widgets_lists.keys())))
+	#	question_widgets_master.widgets_lists[current_question].w_main_lab.pack()
+	#	question_widgets_master.widgets_lists[current_question].w_main_frame.pack()
+	#	return
 	
 	path = "res/q%d.txt" % (current_question + 1)	
 	if not os.path.exists(path):
@@ -173,17 +174,21 @@ def process_question(current_question, prev_question = -1):
 
 def next_question(event):
 	global _CURRENT_QUESTION
+	print("next_question: _CURRENT_QUESTION=%d" % _CURRENT_QUESTION)
 	
 	if (_CURRENT_QUESTION < _QUESTION_NUMBER - 1):
 		_CURRENT_QUESTION += 1
 		process_question(_CURRENT_QUESTION, _CURRENT_QUESTION - 1)
+		nav_widgets.backward.bind('<Button-1>', prev_question)
 		nav_widgets.forward.bind('<Button-1>', next_question)
-	else:
+
+	if (_CURRENT_QUESTION == _QUESTION_NUMBER - 1):
 		nav_widgets.forward.config(state = "disabled")
 		nav_widgets.forward.unbind('<Button-1>')
 
 def prev_question(event):
 	global _CURRENT_QUESTION
+	print("prev_question: _CURRENT_QUESTION=%d" % _CURRENT_QUESTION)
 	
 	if (_CURRENT_QUESTION > 0):
 		_CURRENT_QUESTION -= 1
@@ -193,10 +198,11 @@ def prev_question(event):
 	else:
 		nav_widgets.backward.bind('<Button-1>', start_app)
 	
-	process_question(_CURRENT_QUESTION, _CURRENT_QUESTION - 1)
+	process_question(_CURRENT_QUESTION, _CURRENT_QUESTION + 1)
 	
 def second_window(event):
 	global window
+	print("second_window: %s" % str(event))
 
 	pack_forget_widgets(widgets)
 	nav_widgets.backward.config(state = "normal")
@@ -246,5 +252,6 @@ def start_app(event):
 		pack_widgets(widgets)
 		nav_widgets.backward.unbind('<Button-1>')
 		nav_widgets.backward.config(state = "disabled")
+		nav_widgets.forward.bind('<Button-1>', second_window)
 		
 start_app(None)
