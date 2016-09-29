@@ -111,13 +111,13 @@ def grid_forget_widgets(object):
 def process_question(current_question, prev_question = -1):
 	print("process_question: question %d%s" % (current_question, (", previous was %d" % prev_question) if prev_question >= 0 else ""))
 	if prev_question != -1: # if has previous question
-		question_widgets_master.widgets_lists[prev_question].w_main_lab.destroy()
+		question_widgets_master.widgets_lists[prev_question].w_title_lab.destroy()
 		question_widgets_master.widgets_lists[prev_question].w_main_frame.destroy()
 		
 	#if current_question in question_widgets_master.widgets_lists.keys():
 	#	print("%d is in question_widgets_master.widgets_lists.keys()  = %s, loading the main frame..." 
 	#		% (current_question, str(question_widgets_master.widgets_lists.keys())))
-	#	question_widgets_master.widgets_lists[current_question].w_main_lab.pack()
+	#	question_widgets_master.widgets_lists[current_question].w_title_lab.pack()
 	#	question_widgets_master.widgets_lists[current_question].w_main_frame.pack()
 	#	return
 	
@@ -129,14 +129,18 @@ def process_question(current_question, prev_question = -1):
 	Q = readFile(path)
 	count, label_count = 0, 0
 	question_frame = Frame()
+	
 	question_widgets.w_main_frame = question_frame
-	question_widgets.w_main_lab=Tkinter.Label(window, 
-		text=TEST_LABEL3, wraplength=(window.winfo_screenwidth()*0.8-3), justify = CENTER)
 			
-	question_widgets.w_main_lab.pack(side = TOP)
 	for line in Q.split("\n"):
 		line = line.replace("\r", "")
-		if (count > 0):
+		if (count == 0):
+			# question title
+			question_widgets.w_title_lab = Label(window, text=line,
+				wraplength=(window.winfo_screenwidth()*0.8-3), justify = CENTER)
+			question_widgets.w_title_lab.pack(side = TOP)
+		elif (count > 1):
+			# table start
 			try:
 				question, answer_form = line[:-1], line[-1]
 			except:
@@ -147,13 +151,13 @@ def process_question(current_question, prev_question = -1):
 
 		text_lines_count = 0
 
-		# title
-		if count == 0:
+		# table start
+		if count == 1:
 			label = Tkinter.Label(question_frame, text = question)
 			setattr(question_widgets, "w_first_label", label)
 			label.grid(row=label_count, column=0, sticky="W")
 			label_count += 1
-		else:
+		elif count > 1:
 			for text_line in textwrap.wrap(question, width=int(window.winfo_screenwidth()/12)):
 				if (text_lines_count > 0):
 					text_line = "     " + text_line
@@ -248,7 +252,7 @@ def start_app(event):
 		window.mainloop()
 	else:
 		question_widgets_master.widgets_lists[_CURRENT_QUESTION].w_main_frame.pack_forget()
-		question_widgets_master.widgets_lists[_CURRENT_QUESTION].w_main_lab.pack_forget()
+		question_widgets_master.widgets_lists[_CURRENT_QUESTION].w_title_lab.pack_forget()
 		pack_widgets(widgets)
 		nav_widgets.backward.unbind('<Button-1>')
 		nav_widgets.backward.config(state = "disabled")
