@@ -114,7 +114,7 @@ def process_question(current_question, prev_question = -1):
 		question_widgets_master.widgets_lists[prev_question].w_main_frame.pack_forget()
 		
 	if current_question in question_widgets_master.widgets_lists.keys():
-		print("%d in question_widgets_master.widgets_lists.keys()  = %s, loading the main frame..." 
+		print("%d is in question_widgets_master.widgets_lists.keys()  = %s, loading the main frame..." 
 			% (current_question, str(question_widgets_master.widgets_lists.keys())))
 		question_widgets_master.widgets_lists[current_question].w_main_lab.pack()
 		question_widgets_master.widgets_lists[current_question].w_main_frame.pack()
@@ -123,6 +123,7 @@ def process_question(current_question, prev_question = -1):
 	path = "res/q%d.txt" % (current_question + 1)	
 	if not os.path.exists(path):
 		print("%s doesn't exist, bailing away..." % (path))
+		return
 		
 	Q = readFile(path)
 	count, label_count = 0, 0
@@ -162,6 +163,7 @@ def process_question(current_question, prev_question = -1):
 				# if first question line
 				if (text_lines_count == 0):
 					entry = Entry(question_frame, width=1, bd=1)
+					setattr(question_widgets, "w%s_entry" % (str(count).zfill(3)), entry)
 					entry.grid(row = label_count, column=1)
 				text_lines_count += 1
 				label_count += 1
@@ -216,10 +218,10 @@ def start_app(event):
 	
 		widgets.w00_main_frame = Frame(window, borderwidth = 2)
 		widgets.w01_lab=Tkinter.Label(widgets.w00_main_frame, 
-			text=TEST_LABEL, wraplength=(window.winfo_screenwidth()-3), justify = CENTER)
+			text=TEST_LABEL, wraplength=(window.winfo_screenwidth()*0.85-3), justify = CENTER)
 		
 		widgets.w02_lab=Tkinter.Label(widgets.w00_main_frame, 
-			text=TEST_LABEL2, wraplength=(window.winfo_screenwidth()-3), justify = LEFT)
+			text=TEST_LABEL2, wraplength=(window.winfo_screenwidth()*0.85-3), justify = LEFT)
 		#widgets.w02_ent=Tkinter.Entry(window, width=20,bd=3)
 		#widgets.w02_ent.insert(END, user_name)
 	
